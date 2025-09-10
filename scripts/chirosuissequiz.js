@@ -1,5 +1,4 @@
-   
-    <!-- Ihr Quiz-Script -->
+<!-- Ihr Quiz-Script -->
         $(document).ready(function() {
             let currentQuestion = 0;
             let answers = [];
