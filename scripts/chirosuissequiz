@@ -1,1 +1,211 @@
-
+   
+    <!-- Ihr Quiz-Script -->
+        $(document).ready(function() {
+            let currentQuestion = 0;
+            let answers = [];
+            let totalQuestions = 10;
+            
+            // Quiz initialisieren
+            function initQuiz() {
+                showQuestion(0);
+                $('.quiz-step').removeClass('active');
+                $('.question-step').first().addClass('active');
+            }
+            
+            // Frage anzeigen
+            function showQuestion(questionIndex) {
+                $('.question-step').removeClass('active');
+                $(`.question-step[data-question="${questionIndex}"]`).addClass('active');
+                
+                // Progress anzeigen
+                updateProgress(questionIndex);
+            }
+            
+            // Progress aktualisieren
+            function updateProgress(current) {
+                let progress = ((current + 1) / totalQuestions) * 100;
+                $('.progress-bar').css('width', progress + '%');
+                $('.question-counter').text(`Frage ${current + 1} von ${totalQuestions}`);
+            }
+            
+            // Antwort verarbeiten
+            $('.answer-btn').on('click', function() {
+                let answer = $(this).data('answer');
+                answers[currentQuestion] = answer;
+                
+                // Visual feedback
+                $(this).css('transform', 'scale(0.95)');
+                setTimeout(() => {
+                    $(this).css('transform', '');
+                }, 150);
+                
+                currentQuestion++;
+                
+                setTimeout(() => {
+                    if (currentQuestion < totalQuestions) {
+                        showQuestion(currentQuestion);
+                    } else {
+                        showTextStep();
+                    }
+                }, 300);
+            });
+            
+            // Textfeld-Schritt anzeigen
+            function showTextStep() {
+                $('.quiz-step').removeClass('active');
+                $('.text-step').addClass('active');
+                $('.progress-container').hide(); // Progress bar ausblenden
+            }
+            
+            // Text-Schritt weiter
+            $('.text-continue').on('click', function() {
+                let textAnswer = $('.quiz-text').val().trim();
+                
+                if (textAnswer === '') {
+                    alert('Bitte geben Sie einen Text ein.');
+                    return;
+                }
+                
+                answers.textAnswer = textAnswer;
+                showFormStep();
+            });
+            
+            // Formular-Schritt anzeigen
+            function showFormStep() {
+                $('.text-step').removeClass('active');
+                $('.form-step').addClass('active');
+            }
+            
+            // Formular absenden
+            $('.quiz-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                let isValid = validateForm();
+                
+                if (isValid) {
+                    // Loading animation
+                    $('.form-submit').text('Wird berechnet...').prop('disabled', true);
+                    
+                    setTimeout(() => {
+                        calculateAndShowResult();
+                    }, 1500);
+                }
+            });
+            
+            // Formular validieren
+            function validateForm() {
+                let isValid = true;
+                
+                $('.required').each(function() {
+                    if ($(this).val().trim() === '') {
+                        $(this).addClass('error');
+                        isValid = false;
+                    } else {
+                        $(this).removeClass('error');
+                    }
+                });
+                
+                if (!isValid) {
+                    alert('Bitte füllen Sie alle Pflichtfelder aus.');
+                }
+                
+                return isValid;
+            }
+            
+            // Ergebnis berechnen und anzeigen
+            function calculateAndShowResult() {
+                let jaCount = 0;
+                let neinCount = 0;
+                
+                answers.forEach(function(answer) {
+                    if (answer === 'ja') {
+                        jaCount++;
+                    } else if (answer === 'nein') {
+                        neinCount++;
+                    }
+                });
+                
+                let basePercentage = (jaCount / totalQuestions) * 100;
+                let finalPercentage = calculateFakeResult(basePercentage, jaCount, neinCount);
+                
+                showResult(finalPercentage, jaCount, neinCount);
+            }
+            
+            // "Erfundenes" Ergebnis berechnen
+            function calculateFakeResult(basePercentage, jaCount, neinCount) {
+                let adjustment = 0;
+                
+                adjustment += jaCount * 2;
+                adjustment -= neinCount * 2;
+                
+                let randomAdjustment = (Math.random() - 0.5) * 4;
+                adjustment += randomAdjustment;
+                
+                let finalPercentage = basePercentage + adjustment;
+                finalPercentage = Math.max(0, Math.min(100, finalPercentage));
+                
+                return Math.round(finalPercentage);
+            }
+            
+            // Ergebnis anzeigen
+            function showResult(percentage, jaCount, neinCount) {
+                $('.form-step').removeClass('active');
+                $('.result-step').addClass('active');
+                
+                $('.result-ja-count').text(jaCount);
+                $('.result-nein-count').text(neinCount);
+                
+                let resultText = getResultText(percentage);
+                $('.result-text').text(resultText);
+                
+                animatePercentage(percentage);
+            }
+            
+            // Ergebnis-Text basierend auf Prozentsatz
+            function getResultText(percentage) {
+                if (percentage >= 85) {
+                    return "🌟 Außergewöhnlich! Sie haben ein hervorragendes Lebensgefühl und eine sehr positive Einstellung.";
+                } else if (percentage >= 70) {
+                    return "🎉 Großartig! Sie sind auf einem sehr guten Weg und zeigen eine positive Lebenshaltung.";
+                } else if (percentage >= 55) {
+                    return "👍 Gut gemacht! Ihr Ergebnis liegt über dem Durchschnitt, es gibt aber noch Potenzial.";
+                } else if (percentage >= 40) {
+                    return "💪 Solides Fundament! Sie haben bereits gute Ansätze, können aber noch einiges verbessern.";
+                } else {
+                    return "🌱 Wachstumspotenzial! Es gibt viele Möglichkeiten, Ihr Wohlbefinden zu steigern.";
+                }
+            }
+            
+            // Prozent-Animation
+            function animatePercentage(targetPercentage) {
+                let currentPercentage = 0;
+                let increment = targetPercentage / 60;
+                
+                let animation = setInterval(function() {
+                    currentPercentage += increment;
+                    
+                    if (currentPercentage >= targetPercentage) {
+                        currentPercentage = targetPercentage;
+                        clearInterval(animation);
+                    }
+                    
+                    $('.animated-percentage').text(Math.round(currentPercentage) + '%');
+                }, 25);
+            }
+            
+            // Quiz neustarten
+            $('.restart-quiz').on('click', function() {
+                currentQuestion = 0;
+                answers = [];
+                $('.quiz-step').removeClass('active');
+                $('.question-step').first().addClass('active');
+                $('.quiz-form')[0].reset();
+                $('.error').removeClass('error');
+                $('.progress-container').show();
+                $('.form-submit').text('🎉 Quiz abschließen und Ergebnis anzeigen').prop('disabled', false);
+                updateProgress(0);
+            });
+            
+            // Quiz initialisieren
+            initQuiz();
+        });
